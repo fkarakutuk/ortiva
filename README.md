@@ -12,7 +12,9 @@ product/<ürün>/index.html      Ürün detay sayfaları (311 adet)
 solutions/, about/, contact/, catalog/, sss/, vaka-calismalari/ ...  Diğer sayfalar
 assets/css/style.css           Sitenin tüm stilleri
 assets/css/hero3d.css          Ana sayfadaki 3D bölümün stilleri
+assets/css/theme.css           Açık / koyu tema renkleri, logo değişimi, arka plan katmanı
 assets/js/main.js              Menü, arama, mega menü, sayfa geçişleri
+assets/js/ambient.js           Tema düğmesi ve imlece tepki veren nokta ızgarası arka planı
 assets/js/category.js          Kategori sayfalarındaki filtreler
 assets/js/product.js           Ürün görüntüleyici (açı değiştirme, yakınlaştırma)
 assets/js/data.js              Arama ve filtreler için ürün/kategori listesi
@@ -25,6 +27,13 @@ sitemap.xml, robots.txt        Arama motorları için
 ## Önizleme
 
 `index.html` dosyasına çift tıklamanız yeterlidir. Ana sayfadaki 3D bölüm dahil her şey sunucu olmadan da çalışır. Yayındaki sitede de ek bir ayar gerekmez.
+
+## Tema ve arka plan
+
+- Üst menüdeki ay / güneş düğmesi açık ve koyu tema arasında geçiş yapar. Seçim tarayıcıda saklanır; seçim yoksa ziyaretçinin sistem teması kullanılır.
+- Açık temada siyah logo (`logo-black.png`), koyu temada yeşil logo (`logo-green.png`) gösterilir.
+- Koyu temanın renkleri `theme.css` dosyasının başındaki değişkenlerdedir.
+- Arka plandaki nokta ızgarası `ambient.js` içindedir: imleç yaklaştıkça noktalar dağılır, yeşile döner ve ağ çizgileri oluşur. "Hareketi azalt" ayarı açık olan ziyaretçilerde sabit durur. Dokunmatik cihazlarda yalnızca dokunuşla hareket eder.
 
 ## Düzenleme
 

@@ -14,6 +14,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="../../assets/css/style.css">
+<link rel="stylesheet" href="../../assets/css/theme.css">
+<script>(function(){var t;try{t=localStorage.getItem('ortiva-theme')}catch(e){}if(t!=='light'&&t!=='dark'){t=window.matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'}document.documentElement.setAttribute('data-theme',t)})();</script>
 <script type="application/ld+json">
 {"@context":"https://schema.org","@type":"Organization","name":"Ortiva","alternateName":"Ortiva — Galaksi Grup","url":"https://www.ortiva.com.tr","logo":"https://www.ortiva.com.tr/assets/img/logo-green.png","description":"Endüstriyel elektrik bağlantı elemanları üreten Ortiva; kauçuk fiş-priz, CEE norm ürünler, panolar ve kablo yönetimi sistemleri sunar."}
 </script>
@@ -33,6 +35,7 @@
 
 </head>
 <body class="">
+<canvas class="bg-field" aria-hidden="true"></canvas>
 <a class="skip-link" href="#main">İçeriğe geç</a>
 
 <div class="topbar" id="topBar">
@@ -45,7 +48,7 @@
 <header class="site-header" id="siteHeader">
   <div class="header-inner">
     <a class="brand" href="../../index.html" aria-label="Ortiva anasayfa">
-      <img src="../../assets/img/logo-black.png" alt="Ortiva">
+      <img class="logo-light" src="../../assets/img/logo-black.png" alt="Ortiva"><img class="logo-dark" src="../../assets/img/logo-green.png" alt="Ortiva">
     </a>
 
     <nav class="main-nav" aria-label="Ana menü">
@@ -65,6 +68,10 @@
     </nav>
 
     <div class="header-actions">
+      <button class="icon-btn theme-toggle" id="themeToggle" type="button" aria-label="Koyu temaya geç" aria-pressed="false" title="Koyu tema">
+        <svg class="i-moon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>
+        <svg class="i-sun" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="4" stroke="currentColor" stroke-width="1.6"/><path d="M12 2.5v2.2M12 19.3v2.2M4.6 4.6l1.6 1.6M17.8 17.8l1.6 1.6M2.5 12h2.2M19.3 12h2.2M4.6 19.4l1.6-1.6M17.8 6.2l1.6-1.6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+      </button>
       <button class="icon-btn" id="searchTrigger" aria-label="Ürün ara">
         <svg viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="1.6"/><path d="M21 21l-4.3-4.3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
       </button>
@@ -185,7 +192,7 @@
 
 <div class="mobile-nav" id="mobileNav">
   <div class="mobile-nav-head">
-    <a class="brand" href="../../index.html"><img src="../../assets/img/logo-black.png" alt="Ortiva"></a>
+    <a class="brand" href="../../index.html"><img class="logo-light" src="../../assets/img/logo-black.png" alt="Ortiva"><img class="logo-dark" src="../../assets/img/logo-green.png" alt="Ortiva"></a>
     <button class="hamburger" id="mobileClose" aria-expanded="true" aria-label="Menüyü kapat"><span></span></button>
   </div>
   <div class="mobile-nav-body">
@@ -440,5 +447,6 @@ bir üründür.
 <script src="../../assets/js/data.js"></script>
 <script src="../../assets/js/main.js"></script>
 <script src="../../assets/js/product.js"></script>
+<script src="../../assets/js/ambient.js" defer></script>
 </body>
 </html>
