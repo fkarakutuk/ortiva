@@ -77,3 +77,17 @@
 html.theme-anim, html.theme-anim *{ transition: background-color .35s var(--ease-out), color .35s var(--ease-out), border-color .35s var(--ease-out) !important; }
 :root[data-theme="dark"] .story-visual{ background: radial-gradient(circle at 50% 28%, #1C221F, #121614 78%); }
 :root[data-theme="dark"] .story-visual.is-product{ background: var(--tile-bg); }
+
+/* ana sayfa 3D sahnesi içindeki hafif alan: sahneyle birlikte sabit, 3D modelin altında */
+.bg-field--stage{ position: absolute; inset: 0; width: 100%; height: 100%; z-index: 0; }
+
+/* ana sayfada bölüm zeminleri biraz daha saydam: hafif alan görünsün */
+.page-home .section.surface{ background: color-mix(in srgb, var(--bg-surface) 55%, transparent); }
+
+/* tema düğmesi eklendikten sonra dar masaüstü genişliklerinde menü tek satırda kalsın */
+.nav-link{ white-space: nowrap; }
+@media (min-width: 1100px) and (max-width: 1360px){
+  .main-nav, .main-nav > ul{ gap: var(--sp-5); }
+  .header-actions{ gap: var(--sp-2); }
+  .header-actions .btn-outline{ display: none; }
+}

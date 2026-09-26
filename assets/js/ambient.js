@@ -43,12 +43,31 @@
   if (mq.addEventListener) mq.addEventListener('change', onScheme); else if (mq.addListener) mq.addListener(onScheme);
 
   // ------------------------------------------------------------------ arka plan alanı
-  var field = null;
+  var field = null, fields = [];
+  var home = document.body.classList.contains('page-home');
   var canvas = document.querySelector('.bg-field');
-  if (canvas && canvas.getContext) field = createField(canvas);
+  // ana sayfada efekt daha hafif
+  if (canvas && canvas.getContext) fields.push(createField(canvas, { soft: home ? 0.65 : 1 }));
+  // ana sayfadaki koyu 3D sahnede ayrı, çok hafif bir katman (koyu zemin renkleriyle)
+  var stage = document.querySelector('.h3d-stage');
+  if (stage && canvas && canvas.getContext) {
+    var hc = document.createElement('canvas');
+    hc.className = 'bg-field bg-field--stage'; hc.setAttribute('aria-hidden', 'true');
+    var bg = stage.querySelector('.h3d-bg');
+    if (bg && bg.nextSibling) stage.insertBefore(hc, bg.nextSibling); else stage.appendChild(hc);
+    fields.push(createField(hc, { soft: 0.45, tone: 'dark', host: stage, parallax: 0 }));
+  }
+  field = fields.length ? { recolor: function () { fields.forEach(function (f) { f.recolor(); }); } } : null;
   applyTheme(currentTheme(), false);
 
-  function createField(cv) {
+  function createField(cv, opts) {
+    opts = opts || {};
+    var soft = opts.soft == null ? 1 : opts.soft, host = opts.host || null;
+    var par = opts.parallax == null ? 0.25 : opts.parallax;
+    var visible = true;
+    if (host && 'IntersectionObserver' in window) {
+      new IntersectionObserver(function (ents) { visible = ents[0].isIntersecting; if (visible) kick(); }).observe(host);
+    }
     var ctx = cv.getContext('2d');
     var W = 0, H = 0, dpr = 1, S = 26, cols = 0, rows = 0;
     var dx, dy, vx, vy, glow;                       // noktaların sapma, hız ve parlaklık durumu
@@ -60,16 +79,18 @@
     var continuous = !reduce && window.matchMedia('(pointer: fine)').matches;
 
     function recolor() {
-      var dark = currentTheme() === 'dark';
+      var dark = opts.tone === 'dark' || currentTheme() === 'dark';
       col = dark
         ? { dot: 'rgba(214,226,219,', base: 0.15, line: 'rgba(94,194,158,', green: [94, 194, 158], halo: 'rgba(59,171,134,' , haloA: 0.10 }
         : { dot: 'rgba(22,30,26,', base: 0.2, line: 'rgba(35,107,79,', green: [35, 140, 104], halo: 'rgba(59,171,134,', haloA: 0.08 };
+      col.base *= (0.45 + soft * 0.55); col.haloA *= soft;
       kick();
     }
 
     function resize() {
       dpr = Math.min(window.devicePixelRatio || 1, 2);
-      W = window.innerWidth; H = window.innerHeight;
+      if (host) { var hr = host.getBoundingClientRect(); W = Math.round(hr.width); H = Math.round(hr.height); }
+      else { W = window.innerWidth; H = window.innerHeight; }
       S = W < 700 ? 24 : 28;
       R = W < 700 ? 110 : 160;
       cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
@@ -87,6 +108,7 @@
         var dt = Math.max(8, now - mouse.last);
         mouse.vx = (x - mouse.x) / dt * 16; mouse.vy = (y - mouse.y) / dt * 16;
       }
+      if (host) { var r = host.getBoundingClientRect(); x -= r.left; y -= r.top; if (x < -R || y < -R || x > r.width + R || y > r.height + R) { mouse.active = false; kick(); return; } }
       mouse.x = x; mouse.y = y; mouse.last = now; mouse.active = true;
       kick();
     }
@@ -99,7 +121,7 @@
     document.addEventListener('visibilitychange', function () { if (!document.hidden) kick(); });
 
     function frame(now) {
-      if (document.hidden) { running = false; return; }
+      if (document.hidden || !visible) { running = false; return; }
       var idle = !mouse.active && now - mouse.last > 1600;
       // imleç yokken ortam dalgası için ~30 fps yeterli
       if (idle && now - lastFrame < 33) { requestAnimationFrame(frame); return; }
@@ -114,7 +136,7 @@
 
     function step(now) {
       var n = cols * rows, e = 0;
-      var oy = -((window.scrollY * 0.25) % S);
+      var oy = -((window.scrollY * par) % S);
       var mx = mouse.x, my = mouse.y, act = mouse.active && !reduce;
       mouse.vx *= 0.9; mouse.vy *= 0.9;
       var R2 = R * R;
@@ -127,8 +149,8 @@
             var px = hx + dx[k] - mx, py = hy + dy[k] - my, d2 = px * px + py * py;
             if (d2 < R2) {
               var d = Math.sqrt(d2) || 1, f = 1 - d / R, f2 = f * f;
-              vx[k] += (px / d) * f2 * 2.6 + mouse.vx * f2 * 0.18;   // dışa itme + sürüklenme
-              vy[k] += (py / d) * f2 * 2.6 + mouse.vy * f2 * 0.18;
+              vx[k] += ((px / d) * f2 * 2.6 + mouse.vx * f2 * 0.18) * (0.4 + soft * 0.6);   // dışa itme + sürüklenme
+              vy[k] += ((py / d) * f2 * 2.6 + mouse.vy * f2 * 0.18) * (0.4 + soft * 0.6);
               g = f;
             }
           }
@@ -144,7 +166,7 @@
 
     function draw(now) {
       var t = (now - t0) / 1000;
-      var oy = -((window.scrollY * 0.25) % S);
+      var oy = -((window.scrollY * par) % S);
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       ctx.clearRect(0, 0, W, H);
       // 1) taban noktalar tek geçişte; hafif, yavaş ilerleyen tarama dalgası
@@ -163,7 +185,7 @@
       ctx.fill();
       if (wave) {
         // çapraz ilerleyen ince ışık bandı: noktaların bir kısmı biraz daha belirgin
-        ctx.fillStyle = col.line + '0.22)';
+        ctx.fillStyle = col.line + (0.22 * soft).toFixed(3) + ')';
         ctx.beginPath();
         var band = ((t * 90) % (W + H + 600)) - 300;
         for (j = 0; j < rows; j++) {
@@ -189,13 +211,13 @@
           k = j * cols + i;
           if (glow[k] <= 0.04) continue;
           x = (i - 0.5) * S + dx[k]; y = (j - 1) * S + oy + dy[k];
-          var a = glow[k] * 0.5;
+          var a = glow[k] * 0.5 * soft;
           if (i + 1 < cols) {
-            var r = k + 1; ctx.strokeStyle = col.line + (Math.min(a, glow[r] * 0.5 + 0.05)).toFixed(3) + ')';
+            var r = k + 1; ctx.strokeStyle = col.line + (Math.min(a, (glow[r] * 0.5 + 0.05) * soft)).toFixed(3) + ')';
             ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo((i + 0.5) * S + dx[r], (j - 1) * S + oy + dy[r]); ctx.stroke();
           }
           if (j + 1 < rows) {
-            var b = k + cols; ctx.strokeStyle = col.line + (Math.min(a, glow[b] * 0.5 + 0.05)).toFixed(3) + ')';
+            var b = k + cols; ctx.strokeStyle = col.line + (Math.min(a, (glow[b] * 0.5 + 0.05) * soft)).toFixed(3) + ')';
             ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo((i - 0.5) * S + dx[b], j * S + oy + dy[b]); ctx.stroke();
           }
         }
@@ -208,7 +230,7 @@
           if (glow[k] <= 0.04) continue;
           x = (i - 0.5) * S + dx[k]; y = (j - 1) * S + oy + dy[k];
           var q = glow[k], rad = 0.9 + q * 1.9;
-          ctx.fillStyle = 'rgba(' + G[0] + ',' + G[1] + ',' + G[2] + ',' + (0.25 + q * 0.75).toFixed(3) + ')';
+          ctx.fillStyle = 'rgba(' + G[0] + ',' + G[1] + ',' + G[2] + ',' + ((0.25 + q * 0.75) * (0.35 + soft * 0.65)).toFixed(3) + ')';
           ctx.beginPath(); ctx.arc(x, y, rad, 0, 6.2832); ctx.fill();
         }
       }
