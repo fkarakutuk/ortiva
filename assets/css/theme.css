@@ -91,3 +91,10 @@ html.theme-anim, html.theme-anim *{ transition: background-color .35s var(--ease
   .header-actions{ gap: var(--sp-2); }
   .header-actions .btn-outline{ display: none; }
 }
+
+/* mega menü: header kaydırınca 64 px'e iniyor; menü de onun hemen altına otursun (boşluk kalmasın) */
+.mega-menu{ transition: opacity var(--dur-base) var(--ease-out), transform var(--dur-base) var(--ease-out), top var(--dur-base) var(--ease-out), visibility 0s linear var(--dur-base); }
+.mega-menu.is-open{ transition: opacity var(--dur-base) var(--ease-out), transform var(--dur-base) var(--ease-out), top var(--dur-base) var(--ease-out); }
+.site-header.is-scrolled ~ .mega-menu{ top: calc(64px + var(--topbar-h)); }
+/* imleç header'dan menüye geçerken kopmasın diye görünmez köprü */
+.mega-menu::before{ content: ""; position: absolute; left: 0; right: 0; top: -14px; height: 14px; }

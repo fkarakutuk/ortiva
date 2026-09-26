@@ -2315,7 +2315,10 @@ function createStage(opts) {
   // Only render while the owning section is on screen.
   let active = true;
   if (activeEl && 'IntersectionObserver' in window) {
-    new IntersectionObserver((ents) => { active = ents[0].isIntersecting; if (active) dirty = true; }).observe(activeEl);
+    new IntersectionObserver((ents) => {
+      active = ents[0].isIntersecting; if (active) dirty = true;
+      canvas.classList.toggle('is-idle', !active);   // sahne dışında tuval gizli: sonraki bölümler yarı saydam olabilir
+    }).observe(activeEl);
   }
   const cur = Object.assign({}, DEF);
   let first = true, dirty = true, last = performance.now();

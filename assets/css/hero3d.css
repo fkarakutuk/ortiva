@@ -121,8 +121,8 @@
 .h3d.is-3d .h3d-note{ display: flex; }
 
 /* keep the next section above the fixed canvas as it scrolls in */
-.h3d + .section, .h3d ~ .section{ position: relative; z-index: 2; background-color: var(--bg-primary); }
-.h3d ~ .section.surface{ background-color: var(--bg-surface); }
+.h3d + .section, .h3d ~ .section{ position: relative; z-index: 2; background-color: color-mix(in srgb, var(--bg-primary) 60%, transparent); }
+.h3d ~ .section.surface{ background-color: color-mix(in srgb, var(--bg-surface) 55%, transparent); }
 
 @media (max-width: 900px){
   .h3d-s0{ bottom: auto; top: var(--h3d-top); }
@@ -144,4 +144,7 @@
 
 /* the section right after the 3D story slides over the fixed canvas, so it
    must be fully opaque from the first pixel (no fade-in reveal) */
-.h3d-next{ background-color: var(--bg-primary); }
+.h3d-next{ background-color: color-mix(in srgb, var(--bg-primary) 60%, transparent); }
+/* 3D tuvali sahne görünmezken gizlenir (stage.js), bu yüzden sonraki bölümler
+   yarı saydam olabilir ve arka plandaki nokta alanı görünür */
+.h3d-canvas.is-idle{ visibility: hidden; }
