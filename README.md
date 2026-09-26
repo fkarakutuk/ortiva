@@ -17,7 +17,7 @@ assets/js/category.js          Kategori sayfalarındaki filtreler
 assets/js/product.js           Ürün görüntüleyici (açı değiştirme, yakınlaştırma)
 assets/js/data.js              Arama ve filtreler için ürün/kategori listesi
 assets/js/hero3d.bundle.js     Ana sayfa 3D sahnesi: Three.js r160 (MIT lisansı), sahne motoru,
-                               GL 0097 konsept modeli ve kaydırma anahtar kareleri tek dosyada
+                               GL 0096 modeli ve kaydırma anahtar kareleri tek dosyada
 assets/img/                    Görseller (WebP) ve logolar (PNG)
 sitemap.xml, robots.txt        Arama motorları için
 ```
@@ -45,4 +45,4 @@ sitemap.xml, robots.txt        Arama motorları için
   - GL 1052 beyaz kablo bağı için aynı seriden GL 1059 fotoğrafı kullanıldı.
 
   Bu iki üründe sayfada ve kartta "Temsili görsel" notu yer alır. Gerçek fotoğrafları gelince aynı dosya adlarıyla değiştirmeniz yeterlidir.
-- **3D model:** Ana sayfadaki GL 0097 3D modeli bir konsepttir. Üreticinin CAD verisiyle değiştirilecektir. Kaydırma sahnelerinin ayarları (`keyframes`) `hero3d.bundle.js` dosyasının sonundadır.
+- **3D model:** Ana sayfadaki GL 0096 (3'lü kauçuk grup priz) modeli, gerçek ürünün her açıdan çekilmiş fotoğraflarından ölçülerek kodla kurulmuştur; CAD verisi gelirse onunla değiştirilebilir. Uç kapaktaki plakada numunedeki marka yerine Ortiva logosu vardır. Kapaklar askılarıyla birlikte açılır. Kaydırma sahnelerinin ayarları (`keyframes`) `hero3d.bundle.js` dosyasının sonundadır.
