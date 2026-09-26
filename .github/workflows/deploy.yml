@@ -1,0 +1,38 @@
+name: Siteyi yayinla
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+concurrency:
+  group: pages
+  cancel-in-progress: false
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Yuklenen site arsivini ac (tek seferlik)
+        run: |
+          if ls site.zip.part* >/dev/null 2>&1; then
+            cat site.zip.part* > /tmp/site.zip
+            git rm -q site.zip.part*
+            unzip -oq /tmp/site.zip -d .
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add -A
+            git commit -q -m "Site dosyalari arsivden acildi"
+            git push
+          fi
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: .
+      - id: deployment
+        uses: actions/deploy-pages@v4
