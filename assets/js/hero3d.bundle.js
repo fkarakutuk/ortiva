@@ -1,6 +1,6 @@
 /* Ortiva homepage 3D story, single classic script (works from file:// too).
  * Contains Three.js r160 (MIT, (c) 2010-2023 Three.js Authors) with its RoomEnvironment and ConvexHull,
- * the scroll stage, and the GL 0096 model built in code from photographs of the real product.
+ * the scroll stage, and the GL 0096 / GL 0113 / GL 0216 models built in code from product photographs.
  * Scroll poses (keyframes) are at the end of this file. */
 var THREE=(function(){
 /**
@@ -1699,14 +1699,25 @@ function contactShadow(opacity = 0.35) {
   return m;
 }
 
-// GL 0096 — 1X16A Monofaze Kauçuk 3'lü Grup Priz
-// Üreticiden CAD gelmediği için gerçek ürünün her açıdan çekilmiş fotoğraflarından
-// ölçülerek kodla modellenmiştir. Birim: milimetre.
+// Kauçuk 3'lü grup priz ailesi (aynı gövde, farklı priz yüzü / kapak / etiket).
+//  - GL 0096 1X16A Monofaze: gerçek ürünün her açıdan çekilmiş fotoğraflarından ölçülerek modellendi.
+//  - GL 0113 3X25A Trifaze: aynı gövde; kırmızı kapaklar ve arka kulakçıklar katalog fotoğrafından,
+//    5 kutuplu priz yüzü ürün afişindeki yakın plandan alındı. Birim: milimetre.
 // Eksenler: X uzunluk (kablo girişli uç kapak -X tarafında), Y yukarı,
 // Z en (kapak askıları -Z / arka, kapak kulakçıkları +Z / ön).
 // Arayüz sahne koduyla aynıdır: { root, parts, anchors, setState, length }.
 
-function buildGL0096({ renderer, logoUrl, invalidate } = {}) {
+const RG_VARIANTS = {
+  gl0096: { sockets: 'schuko', lidRed: false, lidStyle: 'strap', code: '210XXX', plaque: true,
+    label: [['250V ~  10/16A', 3.4], ['2P+⏚  TS-40', 3.4], ['IP 44', 3.4], ['MADE IN TURKEY', 3.2]] },
+  gl0113: { sockets: 'tri5', lidRed: true, lidStyle: 'tab', code: null, plaque: true,
+    label: [['GL 0113', 4.2], ['3X25A', 5.2]] },
+};
+function buildGL0096(o) { return buildRubberGroup('gl0096', o); }
+function buildGL0113(o) { return buildRubberGroup('gl0113', o); }
+
+function buildRubberGroup(variant, { renderer, logoUrl, invalidate } = {}) {
+  const V = RG_VARIANTS[variant];
   // ---------------------------------------------------------------- ölçüler
   const T = 50;                 // gövde üst yüzeyi
   const HX = 85, HZ = 33.5;       // priz gövdesi yarı boy / yarı en
@@ -1777,11 +1788,14 @@ function buildGL0096({ renderer, logoUrl, invalidate } = {}) {
   plastic.side = THREE.DoubleSide;
   const plasticFine = plastic.clone(); plasticFine.normalScale = new THREE.Vector2(0.45, 0.45); plasticFine.roughness = 0.55;
   const plasticSmooth = new THREE.MeshPhysicalMaterial({ color: 0x262827, roughness: 0.5, metalness: 0, clearcoat: 0.08, clearcoatRoughness: 0.5, side: THREE.DoubleSide });
+  const plasticRed = plastic.clone(); plasticRed.color = new THREE.Color(0x9a1118); plasticRed.roughness = 0.52;
+  const plasticRedBand = plasticRed.clone(); plasticRedBand.normalScale = new THREE.Vector2(0.25, 0.25);
   const plasticBand = plastic.clone(); plasticBand.normalScale = new THREE.Vector2(0.25, 0.25); plasticBand.roughness = 0.52; plasticBand.clearcoat = 0;
   const cavity = new THREE.MeshStandardMaterial({ color: 0x0e0f0f, roughness: 0.55, metalness: 0, side: THREE.DoubleSide });
   const hole = new THREE.MeshBasicMaterial({ color: 0x030303 });
   const zinc = new THREE.MeshStandardMaterial({ color: 0xd4d8dc, roughness: 0.26, metalness: 1, side: THREE.DoubleSide });
   const nickel = new THREE.MeshStandardMaterial({ color: 0xf0f0ee, roughness: 0.34, metalness: 1, side: THREE.DoubleSide });
+  const brass = new THREE.MeshStandardMaterial({ color: 0xc9a25a, roughness: 0.3, metalness: 1, side: THREE.DoubleSide });
   const bushing = new THREE.MeshStandardMaterial({ color: 0xb4b8ba, roughness: 0.55, metalness: 0, side: THREE.DoubleSide });
 
   // ---------------------------------------------------------------- yardımcılar
@@ -1997,6 +2011,17 @@ function buildGL0096({ renderer, logoUrl, invalidate } = {}) {
     wall.position.y = floorY + wallH / 2; ins.add(wall);
     const floor = new THREE.Mesh(new THREE.CircleGeometry(R_REC, 72), cavity);
     floor.rotation.x = -Math.PI / 2; floor.position.y = floorY; ins.add(floor);
+    if (V.sockets === 'tri5') {
+      // 5 kutuplu trifaze yüz: çevrede 4, ortada 1 delik; pirinç kontak burçları
+      const pts5 = [[0, 0], [0, -10], [10, 0], [0, 10], [-10, 0]];
+      pts5.forEach(([u, v], k) => {
+        const r0 = k === 0 ? 2.5 : 2.7;
+        const b = lathe([[r0, -1.5], [r0, 0.4], [r0 + 0.45, 0.85], [r0 + 1.2, 0.85], [r0 + 1.6, 0.4], [r0 + 1.6, 0]], brass, 32);
+        b.position.set(x + u, floorY, v); ins.add(b);
+        const pit = new THREE.Mesh(new THREE.CircleGeometry(r0 + 0.02, 24), hole);
+        pit.rotation.x = -Math.PI / 2; pit.position.set(x + u, floorY + 0.2, v); ins.add(pit);
+      });
+    } else {
     for (const s of [-1, 1]) {
       const c = DH.clone().multiplyScalar(s * 9.5);
       const b = lathe([[2.3, -1.5], [2.3, 0.5], [2.65, 0.95], [3.35, 0.95], [3.75, 0.55], [3.75, 0]], bushing, 32);
@@ -2019,6 +2044,7 @@ function buildGL0096({ renderer, logoUrl, invalidate } = {}) {
       clip.position.set(x + dir.x * R_REC, RING_TOP, dir.z * R_REC);
       clip.lookAt(new THREE.Vector3(x, RING_TOP, 0));
       ins.add(clip);
+    }
     }
     parts.housing.add(ins);
     parts.inserts.push(ins);
@@ -2060,8 +2086,10 @@ function buildGL0096({ renderer, logoUrl, invalidate } = {}) {
   // kabartma yazılar: kalıp kodu, marka plakası (Ortiva), etiket değerleri
   const up = new THREE.Vector3(1, 0, 0), right = new THREE.Vector3(0, 0, 1);
   const font = (px, w = 700) => `${w} ${px}px "Arial Narrow", Arial, Helvetica, sans-serif`;
-  const code = decal(22, 6, (g, w, h) => { g.font = font(3 * PXMM, 600); g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText('210XXX', w / 2, h / 2 + 2); }, 1.8);
-  parts.cap.add(placeDecal(code, new THREE.Vector3(-92.2, T, 0), right, up));
+  if (V.code) {
+    const code = decal(22, 6, (g, w, h) => { g.font = font(3 * PXMM, 600); g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(V.code, w / 2, h / 2 + 2); }, 1.8);
+    parts.cap.add(placeDecal(code, new THREE.Vector3(-92.2, T, 0), right, up));
+  }
   let logoImg = null;
   const drawPlaque = (g, w, h) => {
     const pw = 30.5 * PXMM, ph = 12.6 * PXMM, x0 = (w - pw) / 2, y0 = (h - ph) / 2, r = 2.2 * PXMM;
@@ -2078,8 +2106,8 @@ function buildGL0096({ renderer, logoUrl, invalidate } = {}) {
   const slopeMid = sTop.clone().add(sBot).multiplyScalar(0.5).addScaledVector(slopeN, rr);
   const label = decal(44, 25, (g, w, h) => {
     g.textAlign = 'center'; g.textBaseline = 'middle';
-    const L = [['250V ~  10/16A', 3.4], ['2P+⏚  TS-40', 3.4], ['IP 44', 3.4], ['MADE IN TURKEY', 3.2]];
-    L.forEach(([t, s], i) => { g.font = font(s * PXMM, 700); g.fillText(t, w / 2, (4.2 + i * 5.3) * PXMM); });
+    const L = V.label, step = L.length > 2 ? 5.3 : 7.5, y0 = L.length > 2 ? 4.2 : 8.5;
+    L.forEach(([t, s], i) => { g.font = font(s * PXMM, 700); g.fillText(t, w / 2, (y0 + i * step) * PXMM); });
   }, 2.2);
   parts.cap.add(placeDecal(label, slopeMid, right, slopeDir));
   model.add(parts.cap);
@@ -2098,8 +2126,9 @@ function buildGL0096({ renderer, logoUrl, invalidate } = {}) {
   }
   // ---- Kapaklar: disk + kulakçık, üstte halka, altta sızdırmazlık tapası; esnek askıyla gövdeye bağlı
   const lidShape = (() => {
-    const a0 = Math.asin(5.2 / LID_R);
     const P = [];
+    if (V.lidStyle !== 'strap') return circlePts(0, 0, LID_R, 120);
+    const a0 = Math.asin(5.2 / LID_R);
     // kulakçık +Z yönünde: dairesel kenar, sonra kulakçık
     P.push(...arcPts(0, 0, LID_R, Math.PI / 2 + a0, Math.PI * 2.5 - a0, 90));
     P.push(...arcPts(2.4, LID_R + 1.6, 2.8, -Math.PI * 0.05, Math.PI / 2, 6));
@@ -2112,9 +2141,21 @@ function buildGL0096({ renderer, logoUrl, invalidate } = {}) {
     pivot.position.set(x, PIVOT_Y, PIVOT_Z);
     const lid = new THREE.Group();
     lid.position.set(0, RING_TOP - PIVOT_Y, -PIVOT_Z);
-    lid.add(extrudeXZ(lidShape, [], 0.9, LID_H - 0.9, 1.1, plastic, 4));
-    lid.add(lathe([[LID_R - 0.4, 1.3], [LID_R + 0.5, 1.2], [LID_R + 0.7, 0.4], [LID_R + 0.2, 0], [R_RING - 1, 0]], plasticFine, 96));
-    lid.add(extrudeXZ(circlePts(0, 0, 16.9, 96), [circlePts(0, 0, 14.8, 96)], LID_H - 0.05, 0.5, 0.22, plasticBand, 2));
+    const lm = V.lidRed ? plasticRed : plastic, lb = V.lidRed ? plasticRedBand : plasticBand;
+    lid.add(extrudeXZ(lidShape, [], 0.9, LID_H - 0.9, 1.1, lm, 4));
+    lid.add(lathe([[LID_R - 0.4, 1.3], [LID_R + 0.5, 1.2], [LID_R + 0.7, 0.4], [LID_R + 0.2, 0], [R_RING - 1, 0]], lm, 96));
+    lid.add(extrudeXZ(circlePts(0, 0, 16.9, 96), [circlePts(0, 0, 14.8, 96)], LID_H - 0.05, 0.5, 0.22, lb, 2));
+    if (V.lidStyle === 'tab') {
+      // arka kenarda yukarı kalkan tutma dili (katalog fotoğrafındaki gibi)
+      const tabShape = new THREE.Shape();
+      tabShape.moveTo(-6, 0); tabShape.lineTo(6, 0); tabShape.lineTo(6, 8); tabShape.quadraticCurveTo(6, 11, 3, 11);
+      tabShape.lineTo(-3, 11); tabShape.quadraticCurveTo(-6, 11, -6, 8); tabShape.lineTo(-6, 0);
+      const tg = new THREE.ExtrudeGeometry(tabShape, { depth: 2.2, bevelEnabled: true, bevelThickness: 0.5, bevelSize: 0.5, bevelSegments: 2, curveSegments: 8 });
+      tg.computeVertexNormals(); boxUV(tg);
+      const tab = new THREE.Mesh(tg, lm);
+      tab.position.set(0, LID_H - 1.5, -LID_R + 0.2); tab.rotation.x = -0.18;
+      lid.add(tab);
+    }
     lid.add(lathe([[18.2, 0.2], [18.2, -2.6], [18.9, -3.2], [19.9, -3.2], [20.3, -2.6], [20.3, 0.2]], plasticSmooth, 64));
     const under = new THREE.Mesh(new THREE.CircleGeometry(R_RING - 1, 64), plasticFine);
     under.rotation.x = Math.PI / 2; under.position.y = 0.01; lid.add(under);
@@ -2139,7 +2180,7 @@ function buildGL0096({ renderer, logoUrl, invalidate } = {}) {
     return g;
   };
   const slotMat = hole;
-  SX.forEach((x, i) => {
+  if (V.lidStyle === 'strap') SX.forEach((x, i) => {
     const m = new THREE.Mesh(strapGeo(), plastic);
     m.frustumCulled = false;
     model.add(m);
@@ -2220,6 +2261,122 @@ function buildGL0096({ renderer, logoUrl, invalidate } = {}) {
   return { root, parts, anchors, setState, length: 251 };
 }
 
+// GL 0216 — 4X32A Makine Prizi IP44 (CEE norm, kırmızı)
+// Katalog fotoğrafından kodla modellendi: kare montaj flanşı (4 köşe deliği), eğik priz gövdesi,
+// kalın ağız yakası, 4 kontak delikli priz yüzü ve üstten menteşeli kapak. Birim: milimetre.
+// Eksenler: flanş XY düzleminde (montaj yüzü), priz +Z yönüne ve hafif aşağı bakar.
+// Arayüz sahne koduyla aynıdır: { root, parts, anchors, setState, length }.
+
+function buildGL0216({ renderer } = {}) {
+  const maxAniso = renderer ? renderer.capabilities.getMaxAnisotropy() : 4;
+  const TILT = THREE.MathUtils.degToRad(24);        // priz ekseninin aşağı eğimi
+  const R_BODY = 26, R_RIM = 29, R_REC = 21.5, H_BODY = 30, H_FACE = 37, REC_D = 21;
+
+  const red = new THREE.MeshPhysicalMaterial({ color: 0x7c0a10, roughness: 0.52, metalness: 0, clearcoat: 0.18, clearcoatRoughness: 0.45, side: THREE.DoubleSide });
+  const redDeep = new THREE.MeshStandardMaterial({ color: 0x6e0b10, roughness: 0.6, side: THREE.DoubleSide });
+  const hole = new THREE.MeshBasicMaterial({ color: 0x050303 });
+  const brass = new THREE.MeshStandardMaterial({ color: 0xc9a25a, roughness: 0.3, metalness: 1 });
+
+  const rrShape = (w, h, r) => {
+    const s = new THREE.Shape(), x = -w / 2, y = -h / 2;
+    s.moveTo(x + r, y); s.lineTo(x + w - r, y); s.quadraticCurveTo(x + w, y, x + w, y + r);
+    s.lineTo(x + w, y + h - r); s.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+    s.lineTo(x + r, y + h); s.quadraticCurveTo(x, y + h, x, y + h - r);
+    s.lineTo(x, y + r); s.quadraticCurveTo(x, y, x + r, y);
+    return s;
+  };
+  const lathe = (pts, mat, seg = 72) => new THREE.Mesh(new THREE.LatheGeometry(pts.map(([r, y]) => new THREE.Vector2(r, y)), seg), mat);
+
+  const root = new THREE.Group();
+  const model = new THREE.Group();
+  root.add(model);
+  const parts = { flange: null, body: new THREE.Group(), lid: null, lidPivot: null, lids: [], lidPivots: [] };
+
+  // ---- Montaj flanşı: kare plaka + köşe delikleri, üstünde yükseltilmiş taban
+  const fl = rrShape(78, 78, 6);
+  for (const sx of [-1, 1]) for (const sy of [-1, 1]) {
+    const hp = new THREE.Path(); hp.absarc(sx * 30, sy * 30, 2.8, 0, Math.PI * 2, true); fl.holes.push(hp);
+  }
+  const flg = new THREE.ExtrudeGeometry(fl, { depth: 3.6, bevelEnabled: true, bevelThickness: 0.7, bevelSize: 0.7, bevelOffset: -0.7, bevelSegments: 3, curveSegments: 16 });
+  flg.translate(0, 0, -5 + 0.7);
+  const flange = new THREE.Mesh(flg, red);
+  model.add(flange); parts.flange = flange;
+  const bossG = new THREE.ExtrudeGeometry(rrShape(60, 60, 10), { depth: 3.5, bevelEnabled: true, bevelThickness: 1.5, bevelSize: 1.5, bevelOffset: -1.5, bevelSegments: 4, curveSegments: 16 });
+  bossG.translate(0, -3, 0);
+  model.add(new THREE.Mesh(bossG, red));
+
+  // ---- Eğik priz gövdesi (yerel +Y = priz ekseni)
+  const body = parts.body;
+  body.position.set(0, -3, 2);
+  body.rotation.x = Math.PI / 2 + TILT;
+  body.add(lathe([[R_BODY + 5, 0], [R_BODY + 2, 4], [R_BODY, 9], [R_BODY, H_BODY], [R_RIM - 0.6, H_BODY + 0.6], [R_RIM, H_BODY + 2],
+    [R_RIM, H_FACE - 1.4], [R_RIM - 1.2, H_FACE], [R_REC + 1.2, H_FACE], [R_REC, H_FACE - 1.2], [R_REC, H_FACE - REC_D]], red, 96));
+  // gövdenin flanşa oturduğu taraf: arka kısmı kapatan disk (içeriden görünmesin)
+  const back = new THREE.Mesh(new THREE.CircleGeometry(R_BODY + 5, 48), red);
+  back.rotation.x = Math.PI / 2; body.add(back);
+  // kilit/kılavuz çentiği (ağzın alt kenarı)
+  const notch = new THREE.Mesh(new THREE.BoxGeometry(5, 3, 4), redDeep);
+  notch.position.set(0, H_FACE - 1.4, R_REC + 0.8); body.add(notch);
+  // priz yüzü: koyu kırmızı ek parça, 4 kontak deliği (biri toprak, daha büyük)
+  const floorY = H_FACE - REC_D;
+  const face = new THREE.Mesh(new THREE.CircleGeometry(R_REC, 72), redDeep);
+  face.rotation.x = -Math.PI / 2; face.position.y = floorY; body.add(face);
+  const inner = new THREE.Mesh(new THREE.CylinderGeometry(R_REC - 0.05, R_REC - 0.05, REC_D, 72, 1, true), redDeep);
+  inner.position.y = floorY + REC_D / 2; body.add(inner);
+  [[45, 3.3], [135, 3.3], [225, 3.3], [315, 4.1]].forEach(([deg, r]) => {
+    const a = THREE.MathUtils.degToRad(deg), u = Math.cos(a) * 11.5, v = Math.sin(a) * 11.5;
+    const boss = lathe([[r, 0], [r, 2.2], [r + 1.4, 2.2], [r + 1.8, 1.6], [r + 1.8, 0]], red, 36);
+    boss.position.set(u, floorY, v); body.add(boss);
+    const pit = new THREE.Mesh(new THREE.CircleGeometry(r, 28), hole);
+    pit.rotation.x = -Math.PI / 2; pit.position.set(u, floorY + 0.25, v); body.add(pit);
+    const ct = lathe([[r - 0.4, 0], [r - 0.4, 0.6], [r, 0.6], [r, 0]], brass, 24);
+    ct.position.set(u, floorY - 1.2, v); body.add(ct);
+  });
+  model.add(body);
+
+  // ---- Menteşeli kapak: ağzın üst kenarında (yerel -Z) menteşe, kapak yüzü etiketli
+  const hinge = new THREE.Mesh(new THREE.BoxGeometry(20, 9, 8), red);
+  hinge.position.set(0, H_FACE - 5, -(R_RIM + 2)); body.add(hinge);
+  const pivot = new THREE.Group();
+  pivot.position.set(0, H_FACE + 1, -(R_RIM + 2.5));
+  const lid = new THREE.Group();
+  lid.position.set(0, 0, R_RIM + 2.5);          // kapak merkezi, menteşeye göre
+  lid.add(lathe([[0, 5.2], [R_RIM - 3, 5.2], [R_RIM - 0.4, 4.6], [R_RIM + 1.2, 3.2], [R_RIM + 1.4, 0], [R_RIM - 1.4, 0], [R_RIM - 1.4, 3], [0, 3]], red, 96));
+  const lidArm = new THREE.Mesh(new THREE.BoxGeometry(16, 5, 9), red);
+  lidArm.position.set(0, 3, -(R_RIM + 1)); lid.add(lidArm);
+  const lip = new THREE.Mesh(new THREE.BoxGeometry(12, 3, 4), red);   // açma tırnağı
+  lip.position.set(0, 2, R_RIM + 2); lid.add(lip);
+  // etiket: kataloğa uygun değerler (4X32A, IP44) ve fotoğraftaki CE işareti
+  const lc = document.createElement('canvas'); lc.width = 512; lc.height = 288;
+  const g = lc.getContext('2d');
+  g.fillStyle = 'rgba(0,0,0,0)'; g.fillRect(0, 0, 512, 288);
+  g.fillStyle = '#c8262d'; g.beginPath(); g.roundRect ? g.roundRect(8, 8, 496, 272, 26) : g.rect(8, 8, 496, 272); g.fill();
+  g.fillStyle = '#f3e3e3'; g.textAlign = 'center'; g.textBaseline = 'middle';
+  g.font = '800 92px Arial, Helvetica, sans-serif'; g.fillText('4X32A', 256, 96);
+  g.font = '700 58px Arial, Helvetica, sans-serif'; g.fillText('IP44', 176, 206);
+  g.font = '700 70px Georgia, "Times New Roman", serif'; g.fillText('CE', 356, 206);
+  const lt = new THREE.CanvasTexture(lc); lt.colorSpace = THREE.SRGBColorSpace; lt.anisotropy = maxAniso;
+  const label = new THREE.Mesh(new THREE.PlaneGeometry(30, 16.9), new THREE.MeshStandardMaterial({ map: lt, transparent: true, roughness: 0.55, polygonOffset: true, polygonOffsetFactor: -2 }));
+  label.rotation.x = -Math.PI / 2; label.position.set(0, 5.25, 2); lid.add(label);
+  pivot.add(lid);
+  body.add(pivot);
+  parts.lid = lid; parts.lidPivot = pivot; parts.lids.push(lid); parts.lidPivots.push(pivot);
+
+  model.traverse((o) => { if (o.isMesh) { o.castShadow = false; o.receiveShadow = false; } });
+  model.position.set(0, 8, -16);
+
+  const anchors = { lid: lid, flange: flange };
+  const smooth = (a, b, t) => { const v = Math.min(1, Math.max(0, (t - a) / (b - a))); return v * v * (3 - 2 * v); };
+  let last = -1;
+  function setState({ lid: l = 0 } = {}) {
+    if (Math.abs(l - last) < 1e-4) return;
+    last = l;
+    pivot.rotation.x = smooth(0, 1, l) * THREE.MathUtils.degToRad(118);
+  }
+  setState({ lid: 0 });
+  return { root, parts, anchors, setState, length: 118 };
+}
+
 // Scroll-driven 3D stage. One fixed canvas; the product is posed by keyframes
 // that are pinned to scroll positions of DOM elements.
 
@@ -2231,6 +2388,7 @@ function createStage(opts) {
   const {
     canvas, keyframes, rimColor = 0x3bab86, keyIntensity = 2.4, rimIntensity = 3.2,
     envIntensity = 0.55, exposure = 1.05, shadowOpacity = 0, float = 0.04, onFrame, logoUrl, activeEl, build,
+    products, start = 0,
   } = opts;
   const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
@@ -2253,17 +2411,25 @@ function createStage(opts) {
   const rim2 = new THREE.DirectionalLight(rimColor, rimIntensity * 0.5); rim2.position.set(6, -2, -4); scene.add(rim2);
   scene.add(new THREE.HemisphereLight(0xdfe7e2, 0x0b0d0c, 0.35));
 
-  const product = (build || buildGL0097)({ renderer, logoUrl, invalidate: () => { dirty = true; } });
-  scene.add(product.root);
+  // Birden çok ürün (carousel): her biri kendi modeli ve kendi kaydırma anahtar kareleriyle.
+  const defs = products || [{ build: build || buildGL0097, keyframes }];
+  let dirty = true;
+  const items = defs.map((d, i) => {
+    const product = d.build({ renderer, logoUrl, invalidate: () => { dirty = true; } });
+    product.root.visible = i === start;
+    scene.add(product.root);
+    return { def: d, product, resolved: [], cur: Object.assign({}, DEF), snap: true, off: 0, offT: 0 };
+  });
+  let current = Math.min(Math.max(0, start), items.length - 1);
+  const product = items[current].product;
   let shadow = null;
   if (shadowOpacity > 0) { shadow = contactShadow(shadowOpacity); product.root.children[0].add(shadow); }
 
   // ---- keyframe resolution ------------------------------------------------
   let vw = 1, vh = 1, visH = 1, visW = 1, mobile = false;
-  let resolved = [];
   function absTop(el) { const r = el.getBoundingClientRect(); return r.top + window.scrollY; }
-  function resolve() {
-    resolved = keyframes.map((k) => {
+  function resolveList(list) {
+    return list.map((k) => {
       const el = typeof k.at.el === 'string' ? document.querySelector(k.at.el) : k.at.el;
       let y = 0;
       if (el) {
@@ -2276,6 +2442,7 @@ function createStage(opts) {
       return { y, v: base, dock: k.dock ? document.querySelector(k.dock) : null, dockScale: k.dockScale || 1 };
     }).sort((a, b) => a.y - b.y);
   }
+  function resolve() { items.forEach((it) => { it.resolved = resolveList(it.def.keyframes); }); }
   function resize() {
     vw = window.innerWidth; vh = window.innerHeight;
     mobile = vw / vh < 0.8 || vw < 900;
@@ -2297,7 +2464,7 @@ function createStage(opts) {
     return { x, y, s };
   }
 
-  function target(scrollY) {
+  function target(resolved, scrollY) {
     if (!resolved.length) return Object.assign({}, DEF);
     let i = 0;
     while (i < resolved.length - 1 && scrollY >= resolved[i + 1].y) i++;
@@ -2311,17 +2478,30 @@ function createStage(opts) {
     return out;
   }
 
+  // ---- ürün değiştirme: eski ürün yana kayarak çıkar, yenisi diğer yandan girer
+  const FAR = 2.6;
+  function setActive(i, dir) {
+    i = ((i % items.length) + items.length) % items.length;
+    if (i === current) return current;
+    const d = dir || (i > current ? 1 : -1);
+    const old = items[current], nu = items[i];
+    old.offT = -d * FAR;
+    nu.off = reduce ? 0 : d * FAR; nu.offT = 0; nu.snap = true; nu.product.root.visible = true;
+    if (reduce) old.product.root.visible = false;
+    current = i; dirty = true;
+    return current;
+  }
+
   // ---- render loop -------------------------------------------------------
   // Only render while the owning section is on screen.
-  let active = true;
+  let onScreen = true;
   if (activeEl && 'IntersectionObserver' in window) {
     new IntersectionObserver((ents) => {
-      active = ents[0].isIntersecting; if (active) dirty = true;
-      canvas.classList.toggle('is-idle', !active);   // sahne dışında tuval gizli: sonraki bölümler yarı saydam olabilir
+      onScreen = ents[0].isIntersecting; if (onScreen) dirty = true;
+      canvas.classList.toggle('is-idle', !onScreen);   // sahne dışında tuval gizli: sonraki bölümler yarı saydam olabilir
     }).observe(activeEl);
   }
-  const cur = Object.assign({}, DEF);
-  let first = true, dirty = true, last = performance.now();
+  let last = performance.now();
   const pointer = { x: 0, y: 0, tx: 0, ty: 0 };
   if (!reduce && matchMedia('(pointer: fine)').matches) {
     window.addEventListener('pointermove', (e) => {
@@ -2339,35 +2519,46 @@ function createStage(opts) {
   }
 
   function frame(now) {
-    if (!active) { last = now; requestAnimationFrame(frame); return; }
+    if (!onScreen) { last = now; requestAnimationFrame(frame); return; }
     const dt = Math.min(0.05, (now - last) / 1000); last = now;
-    const tgt = target(window.scrollY);
-    const k = reduce || first ? 1 : 1 - Math.exp(-dt * 7.5);
+    const k = reduce ? 1 : 1 - Math.exp(-dt * 7.5);
+    const ks = reduce ? 1 : 1 - Math.exp(-dt * 5.5);
     let moving = false;
-    FIELDS.forEach((f) => {
-      const d = tgt[f] - cur[f];
-      if (Math.abs(d) > 1e-4) moving = true;
-      cur[f] += d * k;
-    });
-    first = false;
     pointer.x += (pointer.tx - pointer.x) * (reduce ? 1 : 1 - Math.exp(-dt * 4));
     pointer.y += (pointer.ty - pointer.y) * (reduce ? 1 : 1 - Math.exp(-dt * 4));
     if (Math.abs(pointer.tx - pointer.x) > 1e-3 || Math.abs(pointer.ty - pointer.y) > 1e-3) moving = true;
-
     const t = now / 1000;
     const bob = reduce ? 0 : Math.sin(t * 0.9) * float;
-    const r = product.root;
-    r.position.set(cur.x * visW / 2, cur.y * visH / 2 + bob, 0);
-    const scale = (cur.s * Math.min(visW, visH * 1.7)) / product.length; // cap by height on very wide screens
-    r.scale.setScalar(Math.max(0.0001, scale));
     const D = THREE.MathUtils.degToRad;
-    r.rotation.set(D(cur.rx) + pointer.y * 0.06, D(cur.ry) + pointer.x * 0.1 + (reduce ? 0 : Math.sin(t * 0.6) * 0.015), D(cur.rz), 'XYZ');
-    product.setState({ explode: cur.explode, lid: cur.lid });
-    if (shadow) shadow.material.opacity = shadowOpacity * cur.shadow;
+
+    items.forEach((it, idx) => {
+      const r = it.product.root;
+      if (!r.visible) return;
+      const tgt = target(it.resolved, window.scrollY);
+      const kk = it.snap ? 1 : k;
+      FIELDS.forEach((f) => {
+        const d = tgt[f] - it.cur[f];
+        if (Math.abs(d) > 1e-4) moving = true;
+        it.cur[f] += d * kk;
+      });
+      it.snap = false;
+      const dOff = it.offT - it.off;
+      if (Math.abs(dOff) > 1e-3) { it.off += dOff * ks; moving = true; } else it.off = it.offT;
+      if (idx !== current && Math.abs(it.off) >= FAR - 0.02) { r.visible = false; return; }
+      const cur = it.cur;
+      // kayarken hafif dönüş: geçiş mekanik ama canlı görünsün
+      const spin = it.off * 0.35;
+      r.position.set((cur.x + it.off) * visW / 2, cur.y * visH / 2 + bob, 0);
+      const scale = (cur.s * Math.min(visW, visH * 1.7)) / it.product.length; // cap by height on very wide screens
+      r.scale.setScalar(Math.max(0.0001, scale));
+      r.rotation.set(D(cur.rx) + pointer.y * 0.06, D(cur.ry) + spin + pointer.x * 0.1 + (reduce ? 0 : Math.sin(t * 0.6) * 0.015), D(cur.rz), 'XYZ');
+      it.product.setState({ explode: cur.explode, lid: cur.lid });
+    });
+    if (shadow) shadow.material.opacity = shadowOpacity * items[current].cur.shadow;
 
     if (moving || dirty || !reduce) {
       renderer.render(scene, camera);
-      if (onFrame) onFrame({ cur, project, anchors: product.anchors, vw, vh, mobile });
+      if (onFrame) onFrame({ cur: items[current].cur, project, anchors: items[current].product.anchors, vw, vh, mobile });
       dirty = false;
     }
     requestAnimationFrame(frame);
@@ -2375,7 +2566,7 @@ function createStage(opts) {
 
   resize();
   requestAnimationFrame(frame);
-  return { renderer, scene, camera, product, resize, project };
+  return { renderer, scene, camera, product, resize, project, setActive, get active() { return current; }, count: items.length };
 }
 
 // Toggle `.on` on text blocks by scroll progress through their pin wrapper.
@@ -2421,10 +2612,11 @@ function bindReveals(sel = '[data-reveal]') {
   els.forEach((e) => io.observe(e));
 }
 
-// Homepage hero: scroll-driven 3D story for the featured product (GL 0096).
-// The model is built in code from photographs of the real product (no CAD file yet).
-// If WebGL is missing or anything throws, the section stays in its static state
-// (rendered product image, first scene visible).
+// Homepage hero: 3 ürünlü carousel. Her ürünün kendi 3D modeli ve kendi kaydırma
+// hikâyesi (anahtar kareler + sahne metinleri) vardır; hangi ürün seçiliyse
+// kaydırıldığında onun hareketi oynar. Ürünler sağa/sola kayarak değişir
+// (oklar, alttaki sekmeler, klavye ← → ve dokunmatik kaydırma).
+// If WebGL is missing or anything throws, the section stays in its static state.
 
 const root = document.getElementById('hero3d');
 
@@ -2435,37 +2627,123 @@ function webglAvailable() {
   } catch (e) { return false; }
 }
 
+const P = (f) => ({ el: '#hero3dPin', span: 'pin', f });
+
+// Kauçuk 3'lü grup priz ailesi (GL 0096, GL 0113) aynı gövdeyi paylaşır.
+const RUBBER_KEYS = [
+  // 1 — overview, front three-quarter (cable-entry cap on the left)
+  { at: P(0),    x: 0.17, y: 0.12, s: 0.48, rx: 34, ry: 24,  rz: 0,  m: { x: 0,    y: -0.24, s: 0.92 } },
+  { at: P(0.07), x: 0.17, y: 0.12, s: 0.5,  rx: 38, ry: 16,  rz: -1, m: { x: 0,    y: -0.24, s: 0.95 } },
+  // 2 — close-up on the cap: moulded ratings and the Ortiva plaque
+  { at: P(0.2),  x: 0.5,  y: 0.0,  s: 0.92, rx: 50, ry: 38,  rz: -4, m: { x: 0.95, y: 0.2, s: 1.5 } },
+  { at: P(0.33), x: 0.46, y: 0.02, s: 0.98, rx: 46, ry: 28,  rz: -3, m: { x: 0.9,  y: 0.2, s: 1.55 } },
+  // 3 — lids open one after another
+  { at: P(0.45), x: -0.3, y: -0.04, s: 0.52, rx: 30, ry: -14, rz: 0, lid: 0, m: { x: 0, y: 0.26, s: 1.0 } },
+  { at: P(0.58), x: -0.3, y: -0.02, s: 0.54, rx: 40, ry: 8,   rz: 0, lid: 1, m: { x: 0, y: 0.26, s: 1.0 } },
+  // 4 — top-down, flanked by catalogue values
+  { at: P(0.7),  x: 0, y: 0, s: 0.42, rx: 90, ry: 90,  rz: 0, lid: 0, m: { x: 0, y: -0.04, s: 1.1 } },
+  { at: P(0.85), x: 0, y: 0, s: 0.44, rx: 90, ry: 100, rz: 0,         m: { x: 0, y: -0.04, s: 1.15 } },
+  // 5 — leaves the stage upwards
+  { at: P(1),    x: 0, y: 1.7, s: 0.28, rx: 80, ry: 90, rz: 0,        m: { x: 0, y: 1.6, s: 0.9 } },
+];
+
+// GL 0216: flanşı montaj yüzeyinde duran eğik CEE priz (model önden bakıyor).
+const CEE_KEYS = [
+  { at: P(0),    x: 0.2,  y: 0.1,  s: 0.36, rx: 10, ry: -32, rz: 0, m: { x: 0.1, y: -0.4, s: 0.55 } },
+  { at: P(0.07), x: 0.2,  y: 0.1,  s: 0.37, rx: 12, ry: -24, rz: 0, m: { x: 0.1, y: -0.4, s: 0.57 } },
+  // 2 — close-up on the lid label (4X32A · IP44 · CE)
+  { at: P(0.2),  x: 0.42, y: -0.02, s: 0.5,  rx: 26, ry: -8, rz: -3, m: { x: 0.12, y: 0.18, s: 0.95 } },
+  { at: P(0.33), x: 0.4,  y: 0.0,  s: 0.53, rx: 22, ry: 8,  rz: -2, m: { x: 0.1,  y: 0.18, s: 1.0 } },
+  // 3 — the lid opens, look into the socket face
+  { at: P(0.45), x: -0.3, y: -0.02, s: 0.4, rx: 8,   ry: 26, rz: 0, lid: 0, m: { x: 0, y: 0.26, s: 0.8 } },
+  { at: P(0.58), x: -0.3, y: 0.0,  s: 0.42, rx: -16, ry: 14, rz: 0, lid: 1, m: { x: 0, y: 0.26, s: 0.82 } },
+  // 4 — face-on, flanked by catalogue values
+  { at: P(0.7),  x: 0, y: 0, s: 0.36, rx: -22, ry: 0,  rz: 0, lid: 1, m: { x: 0, y: -0.04, s: 0.8 } },
+  { at: P(0.85), x: 0, y: 0, s: 0.38, rx: -18, ry: 10, rz: 0, lid: 0, m: { x: 0, y: -0.04, s: 0.84 } },
+  { at: P(1),    x: 0, y: 1.7, s: 0.24, rx: 10, ry: 20, rz: 0,        m: { x: 0, y: 1.6, s: 0.7 } },
+];
+
+const PRODUCTS = [
+  { build: buildGL0096, keyframes: RUBBER_KEYS, code: 'GL 0096', short: "3'lü Grup Priz", name: '1X16A Monofaze Kauçuk 3 Lü Grup Priz',
+    href: 'product/gl-0096/index.html', img: 'assets/img/products/kaucuk-fis-ve-prizler/GL_0096-600.webp',
+    rail: ['GL 0096', 'Kapaklar', 'Üstten'], note: ['Gerçek üründen modellendi', '3D model, gerçek ürünün her açıdan çekilmiş fotoğraflarından modellenmiştir.'] },
+  { build: buildGL0113, keyframes: RUBBER_KEYS, code: 'GL 0113', short: "Trifaze 3'lü Grup Priz", name: '3X25A Trifaze Kauçuk 3 Lü Grup Priz',
+    href: 'product/gl-0113/index.html', img: 'assets/img/products/kaucuk-fis-ve-prizler/GL_0113-600.webp',
+    rail: ['GL 0113', 'Kapaklar', 'Üstten'], note: ['Katalog görselinden modellendi', '3D model, katalog fotoğrafı ve ürün afişindeki yakın plan görsellerden modellenmiştir.'] },
+  { build: buildGL0216, keyframes: CEE_KEYS, code: 'GL 0216', short: 'CEE Makine Prizi', name: '4X32A Makine Prizi IP44',
+    href: 'product/gl-0216/index.html', img: 'assets/img/products/cee-norm-fis-ve-prizler/GL_0216-600.webp',
+    rail: ['GL 0216', 'Kapak', 'Önden'], note: ['Katalog görselinden modellendi', '3D model, katalog fotoğrafından modellenmiştir.'] },
+];
+
 if (root && webglAvailable()) {
   try {
     root.classList.add('is-3d');
-    const P = (f) => ({ el: '#hero3dPin', span: 'pin', f });
-    createStage({
+    const stage = createStage({
       canvas: root.querySelector('.h3d-canvas'),
-      build: buildGL0096,
+      products: PRODUCTS,
       logoUrl: ORTIVA_LOGO, // inlined so the plaque texture also works when the page is opened from disk (file://)
       activeEl: root,
-      keyframes: [
-        // 1 — overview, front three-quarter (cable-entry cap on the left)
-        { at: P(0),    x: 0.17, y: 0.12, s: 0.48, rx: 34, ry: 24,  rz: 0,  m: { x: 0,    y: -0.24, s: 0.92 } },
-        { at: P(0.07), x: 0.17, y: 0.12, s: 0.5,  rx: 38, ry: 16,  rz: -1, m: { x: 0,    y: -0.24, s: 0.95 } },
-        // 2 — close-up on the cap: moulded ratings and the Ortiva plaque
-        { at: P(0.2),  x: 0.5,  y: 0.0,  s: 0.92, rx: 50, ry: 38,  rz: -4, m: { x: 0.95, y: 0.2, s: 1.5 } },
-        { at: P(0.33), x: 0.46, y: 0.02, s: 0.98, rx: 46, ry: 28,  rz: -3, m: { x: 0.9,  y: 0.2, s: 1.55 } },
-        // 3 — lids open one after another
-        { at: P(0.45), x: -0.3, y: -0.04, s: 0.52, rx: 30, ry: -14, rz: 0, lid: 0, m: { x: 0, y: 0.26, s: 1.0 } },
-        { at: P(0.58), x: -0.3, y: -0.02, s: 0.54, rx: 40, ry: 8,   rz: 0, lid: 1, m: { x: 0, y: 0.26, s: 1.0 } },
-        // 4 — top-down, flanked by catalogue values
-        { at: P(0.7),  x: 0, y: 0, s: 0.42, rx: 90, ry: 90,  rz: 0, lid: 0, m: { x: 0, y: -0.04, s: 1.1 } },
-        { at: P(0.85), x: 0, y: 0, s: 0.44, rx: 90, ry: 100, rz: 0,         m: { x: 0, y: -0.04, s: 1.15 } },
-        // 5 — leaves the stage upwards
-        { at: P(1),    x: 0, y: 1.7, s: 0.28, rx: 80, ry: 90, rz: 0,        m: { x: 0, y: 1.6, s: 0.9 } },
-      ],
     });
     bindRanges(root);
+    initCarousel(stage);
   } catch (err) {
     root.classList.remove('is-3d');
     console.warn('[hero3d] 3D stage unavailable, showing static hero.', err);
   }
+}
+
+function initCarousel(stage) {
+  const card = document.getElementById('h3dCard');
+  const count = root.querySelector('.h3d-count b');
+  const name = root.querySelector('.h3d-name');
+  const tabs = [...root.querySelectorAll('.h3d-tabs [data-go]')];
+  const rails = [...root.querySelectorAll('[data-rail]')];
+  const note = root.querySelector('.h3d-note');
+  const pad = (n) => String(n + 1).padStart(2, '0');
+
+  function show(i, dir) {
+    const n = PRODUCTS.length;
+    i = ((i % n) + n) % n;
+    if (i === stage.active && dir !== 0) return;
+    const d = dir || (i > stage.active ? 1 : -1);
+    stage.setActive(i, d);
+    const p = PRODUCTS[i];
+    root.style.setProperty('--swap-dir', d);
+    root.dataset.prod = String(i);
+    root.setAttribute('aria-label', 'Öne çıkan ürünler — ' + p.code);
+    count.textContent = pad(i);
+    name.textContent = p.code + ' · ' + p.short;
+    tabs.forEach((t, k) => t.setAttribute('aria-selected', k === i ? 'true' : 'false'));
+    rails.forEach((li) => { li.textContent = p.rail[+li.dataset.rail - 1]; });
+    if (note) { note.textContent = p.note[0]; note.title = p.note[1]; }
+    if (card) {
+      card.classList.add('is-swapping');
+      setTimeout(() => {
+        card.href = p.href;
+        card.querySelector('b').textContent = p.code;
+        card.querySelector('small').textContent = p.name;
+        card.querySelector('img').src = p.img;
+        card.classList.remove('is-swapping');
+      }, 180);
+    }
+  }
+
+  root.querySelectorAll('.h3d-arrow').forEach((b) => b.addEventListener('click', () => show(stage.active + Number(b.dataset.dir), Number(b.dataset.dir))));
+  tabs.forEach((t) => t.addEventListener('click', () => show(Number(t.dataset.go))));
+  // klavye: sekmeler/oklar odaktayken ← →
+  root.querySelector('.h3d-switch').addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowRight') { e.preventDefault(); show(stage.active + 1, 1); }
+    if (e.key === 'ArrowLeft') { e.preventDefault(); show(stage.active - 1, -1); }
+  });
+  // dokunmatik: sahnede yatay kaydırma
+  const st = root.querySelector('.h3d-stage');
+  let sx = 0, sy = 0, tracking = false;
+  st.addEventListener('touchstart', (e) => { const t = e.touches[0]; sx = t.clientX; sy = t.clientY; tracking = true; }, { passive: true });
+  st.addEventListener('touchend', (e) => {
+    if (!tracking) return; tracking = false;
+    const t = e.changedTouches[0], dx = t.clientX - sx, dy = t.clientY - sy;
+    if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) * 1.4) show(stage.active + (dx < 0 ? 1 : -1), dx < 0 ? 1 : -1);
+  }, { passive: true });
 }
 
 })();

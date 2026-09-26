@@ -148,3 +148,47 @@
 /* 3D tuvali sahne görünmezken gizlenir (stage.js), bu yüzden sonraki bölümler
    yarı saydam olabilir ve arka plandaki nokta alanı görünür */
 .h3d-canvas.is-idle{ visibility: hidden; }
+
+/* ---- Ürün carousel'i: 3 ürün, her biri kendi kaydırma hikâyesiyle ---- */
+.h3d-v{ display: none; }
+.h3d[data-prod="0"] .h3d-v[data-v="0"],
+.h3d[data-prod="1"] .h3d-v[data-v="1"],
+.h3d[data-prod="2"] .h3d-v[data-v="2"]{ display: block; animation: h3dSwap .5s var(--ease-out); }
+@keyframes h3dSwap{ from{ opacity: 0; transform: translateX(calc(var(--swap-dir, 1) * 18px)); } to{ opacity: 1; transform: none; } }
+
+.h3d-switch{ position: absolute; right: var(--gutter); bottom: 72px; z-index: 5; display: none;
+  grid-template-columns: auto minmax(0, 1fr) auto; grid-template-rows: auto auto; align-items: center; column-gap: 12px; row-gap: 6px; width: 290px; }
+.h3d.is-3d .h3d-switch{ display: grid; }
+.h3d-arrow{ width: 36px; height: 36px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center;
+  border: 1px solid rgba(255,255,255,.22); color: var(--white); background: rgba(255,255,255,.04);
+  transition: background var(--dur-fast) var(--ease-out), border-color var(--dur-fast) var(--ease-out), transform .15s var(--ease-mech); }
+.h3d-arrow svg{ width: 18px; height: 18px; }
+.h3d-arrow:hover{ background: rgba(var(--ortiva-green-rgb), .18); border-color: var(--ortiva-green); }
+.h3d-arrow:active{ transform: scale(.94); }
+.h3d-arrow:focus-visible, .h3d-tabs button:focus-visible{ outline: 2px solid var(--ortiva-green); outline-offset: 2px; }
+.h3d-switch-info{ display: flex; flex-direction: column; gap: 2px; min-width: 0; text-align: center; }
+.h3d-count{ font-size: 10.5px; font-weight: 700; letter-spacing: .16em; color: var(--stone-400); font-variant-numeric: tabular-nums; }
+.h3d-count b{ color: var(--white); }
+.h3d-name{ font-size: 12.5px; font-weight: 700; color: var(--white); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.h3d-tabs{ grid-column: 1 / -1; display: flex; gap: 6px; }
+.h3d-tabs button{ flex: 1; height: 14px; padding: 6px 0; background: none; cursor: pointer; }
+.h3d-tabs button::before{ content: ""; display: block; height: 2px; background: rgba(255,255,255,.18); transition: background .3s var(--ease-out); }
+.h3d-tabs button[aria-selected="true"]::before{ background: var(--ortiva-green); }
+.h3d-tabs button:hover::before{ background: rgba(255,255,255,.45); }
+.h3d-tabs button[aria-selected="true"]:hover::before{ background: var(--ortiva-green-light); }
+/* kart, sağ alttaki ürün değiştiricinin üstünde dursun */
+.h3d.is-3d .h3d-card{ bottom: 150px; }
+/* kart ürün değişince kısa bir geçiş */
+.h3d-card.is-swapping{ opacity: .0 !important; transform: translateY(6px) !important; transition: opacity .18s, transform .18s; }
+
+@media (max-width: 900px){
+  /* sağ altta "yukarı çık" düğmesi var: değiştirici onun soluna */
+  .h3d-switch{ right: calc(var(--gutter) + 50px); bottom: 78px; width: min(200px, 50vw); column-gap: 8px; }
+  .h3d-arrow{ width: 32px; height: 32px; }
+  .h3d-name{ font-size: 11.5px; }
+  .h3d-note{ max-width: 26vw; }
+  /* sahne metinleri değiştiricinin üstünde kalsın */
+  .h3d-s1{ bottom: 160px; }
+  .h3d-s2{ bottom: calc(154px + 2vh); }
+  .h3d-s3 .r{ bottom: 160px; }
+}
